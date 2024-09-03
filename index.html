@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Виджет Telegram канала</title>
+    <style>
+        #messages-container {
+            width: 400px;
+            height: 600px;
+            overflow-y: scroll;
+            border: 1px solid #ddd;
+            padding: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            background-color: #f9f9f9;
+
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-family: 'Arial', sans-serif;
+            font-size: 14px;
+            color: #333;
+            line-height: 1.5;
+        }
+
+        .message {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+
+        .message h3 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+            color: #333;
+        }
+
+        .message p {
+            margin: 5px 0;
+            font-size: 16px;
+            color: #555;
+        }
+
+        .message video {
+            max-width: 100%;
+            height: auto;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        .no-messages {
+            text-align: center;
+            font-size: 18px;
+            color: #888;
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Сообщения из Telegram канала</h1>
+    <div id="messages-container"></div>
+
+    <script>
+        async function loadMessages() {
+            try {
+                const response = await fetch('http://YOUR_SERVER_ADDRESS:3000/getMessages');
+                if (response.ok) {
+                    const data = await response.json();
+                    const container = document.getElementById('messages-container');
+
+                    // Проверка, что полученные данные представляют собой массив сообщений
+                    if (Array.isArray(data)) {
+                        // Сортировка сообщений по дате (от новых к старым)
+                        data.sort((a, b) => b.date - a.date);
+
+                        data.forEach(message => {
+                            const messageElement = document.createElement('div');
+                            messageElement.classList.add('message');
+
+                            const userElement = document.createElement('h3');
+                            userElement.textContent = `От: ${message.user}`;
+
+                            const dateElement = document.createElement('p');
+                            const messageDate = new Date(message.date * 1000);
+                            dateElement.textContent = `Дата: ${messageDate.toLocaleString()}`;
+
+                            messageElement.appendChild(userElement);
+                            messageElement.appendChild(dateElement);
+
+                            if (message.type === 'text') {
+                                const textElement = document.createElement('p');
+                                textElement.textContent = message.content;
+                                messageElement.appendChild(textElement);
+                            } else if (message.type === 'video_note') {
+                                const videoElement = document.createElement('video');
+                                videoElement.controls = true;
+                                videoElement.src = message.content;
+                                messageElement.appendChild(videoElement);
+                            }
+
+                            container.appendChild(messageElement);
+                        });
+                    } else {
+                        displayNoMessages();
+                    }
+                } else {
+                    displayNoMessages();
+                }
+            } catch (error) {
+                console.error('Ошибка при загрузке сообщений:', error);
+                displayNoMessages();
+            }
+        }
+
+        function displayNoMessages() {
+            const container = document.getElementById('messages-container');
+            container.innerHTML = '<div class="no-messages">Нет доступных сообщений</div>';
+        }
+
+        window.onload = loadMessages;
+    </script>
+
+</body>
+</html>
